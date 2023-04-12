@@ -10,13 +10,10 @@ In this repository, we will provide a fine-tuning of Segformer for pixel-wise do
 
 ## Dataset
 
-The dataset is an ensemble of 15 datasets replicating the setting used in SauvolaNet by [Li et al.](https://arxiv.org/abs/2105.05521) in 2021.
+The dataset is an ensemble of 14 datasets replicating the setting used in SauvolaNet by [Li et al.](https://arxiv.org/abs/2105.05521) in 2021.
 
-<figure align="center">
-  <img src="images/example.png" width="90%" />
-  <figcaption>
-    Figure 1. An example pair from the Bickley diary dataset
-  </figcaption>
-</figure>
+<img src="images/example.png" width="75%" />
+
+> Figure 1. An example pair from the Bickley diary dataset
 
 For more information on the dataset, see SauvolaNet's official [repository](https://github.com/Leedeng/SauvolaNet).
