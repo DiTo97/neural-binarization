@@ -4,9 +4,9 @@ A semantic segmentation model for pixel-wise document image binarization.
 
 ## TODOs
 
-- [ ] fine-tune Segformer starting from the checkpoint [`nvidia/segformer-b3-finetuned-cityscapes-1024-1024`](https://huggingface.co/nvidia/segformer-b3-finetuned-cityscapes-1024-1024);
+- [ ] fine-tune Segformer on 1024 $\times$ 1024 images;
 - [ ] set [`reduce_labels=True`](https://huggingface.co/docs/transformers/main/model_doc/segformer#transformers.SegformerImageProcessor.do_reduce_labels) in Segformer processor to ignore the background;
-- [ ] implement DIBCO metrics from [here](https://github.com/Leedeng/SauvolaNet/blob/main/SauvolaDocBin/metrics.py) or [here](https://gist.github.com/pebbie/643e28c619efaa2fd30b1595bd5d0e6c);
+- [ ] vectorize DIBCO metrics from [here](https://github.com/Leedeng/SauvolaNet/blob/main/SauvolaDocBin/metrics.py) along the batch dimension;
 - [ ] compare valid DIBCO metrics with SauvolaNet's [paper](https://arxiv.org/pdf/2105.05521.pdf).
 
 ## Overview
