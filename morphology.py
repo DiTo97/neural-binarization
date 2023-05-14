@@ -86,7 +86,7 @@ def bwmorph_thin(bitmap: Bitmap, num_iters: int = -1) -> Bitmap:
                 if finished[idx]:
                     continue
 
-                N = ndimage.correlate(bitmap[idx], kernel, mode="constant")
+                N = scipy.ndimage.correlate(bitmap[idx], kernel, mode="constant")
                 D = np.take(lut, N)
                 
                 bitmap[idx][D] = 0
@@ -99,6 +99,7 @@ def bwmorph_thin(bitmap: Bitmap, num_iters: int = -1) -> Bitmap:
             break
 
         num_pixels_before = num_pixels
+        
         num_iters -= 1
     
     if not batched3d:
