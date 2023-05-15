@@ -47,16 +47,13 @@ def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> nptyping.N
     return score
 
 
-def psuedo_fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6, **kwargs) -> None:
+def psuedo_fmeasure(references, preds, eps: float = 1e-6, **kwargs) -> None:
     """The pseudo F-measure metric"""
     neg_references = 1 - references
     neg_preds = 1 - preds
     
-    skeletons = bwmorph_thin(neg_references, **kwargs)
-    skeletons = skeletons.astype(np.uint8)
-    
-    neg_skeletons = 1 - skeletons
-    
+    skeletons = bwmorph_thin(neg_references, **kwargs).astype(np.uint8)
+        
     tpositives = neg_preds * neg_references
     fpositives = neg_preds * references
     
@@ -66,7 +63,7 @@ def psuedo_fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6, **kwar
     precision = num_tpositives / (num_fpositives + num_tpositives + eps)
     
     psuedo_tpositives = neg_preds * skeletons
-    psuedo_fnegatives = preds * neg_skeletons
+    psuedo_fnegatives = preds * skeletons
     
     num_pseudo_tpositives = np.sum(psuedo_tpositives, axis=(1, 2))
     num_pseudo_fnegatives = np.sum(psuedo_fnegatives, axis=(1, 2))
