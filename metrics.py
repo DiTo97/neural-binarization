@@ -72,9 +72,20 @@ def psuedo_fmeasure(references: Bitmap, preds: Bitmap) -> None:
     pass
 
 
-def psnr(references: Bitmap, preds: Bitmap) -> None:
+def psnr(references: Bitmap, preds: Bitmap) -> nptyping.NDArray[float]:
     """The peak signal-to-noise ratio (PSNR) metric"""
-    pass
+    neg_references = 1 - references
+    neg_preds = 1 - preds
+    
+    fpositives = neg_preds * references
+    fnegatives = preds * neg_references
+    
+    ftotals = fpositives | fnegatives
+    
+    err = np.mean(ftotals, axis=(1, 2))
+    score = 10 * np.log10(1 / err)
+    
+    return score
 
 
 @dataclass
@@ -108,7 +119,7 @@ class DIBCO:
         batch_drds = None
         batch_fmeasures = fmeasure(references, preds, self.eps)
         batch_pseudo_fmeasures = None
-        batch_psnrs = None
+        batch_psnrs = psnr(references, preds)
         
         batch_metrics = {
             "drd": np.mean(batch_drds),
