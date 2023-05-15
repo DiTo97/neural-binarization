@@ -22,23 +22,6 @@ from morphology import bwmorph_thin
 def drd(references: Bitmap, preds: Bitmap) -> None:
     """The distance reciprocal distortion (DRD) metric"""
     pass
-
-
-def confusion_matrix_to_fmeasure(
-    num_tpositives: nptyping.NDArray[int],
-    num_fpositives: nptyping.NDArray[int],
-    num_tnegatives: nptyping.NDArray[int],
-    num_fnegatives: nptyping.NDArray[int],
-    eps: float = 1e-6
-) -> nptyping.NDArray[float]:
-    precision = num_tpositives / (num_fpositives + num_tpositives + eps)
-    recall = num_tpositives / (num_fnegatives + num_tpositives + eps)
-    
-    nume = 2 * (precision * recall)
-    deno = precision + recall + eps
-    
-    score = nume / deno
-    return score
     
 
 def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> nptyping.NDArray[float]:
@@ -48,28 +31,53 @@ def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> nptyping.N
     
     tpositives = neg_preds * neg_references
     fpositives = neg_preds * references
-    tnegatives = preds * references
     fnegatives = preds * neg_references
     
     num_tpositives = np.sum(tpositives, axis=(1, 2))
     num_fpositives = np.sum(fpositives, axis=(1, 2))
-    num_tnegatives = np.sum(tnegatives, axis=(1, 2))
     num_fnegatives = np.sum(fnegatives, axis=(1, 2))
     
-    score = confusion_matrix_to_fmeasure(
-        num_tpositives,
-        num_fpositives,
-        num_tnegatives,
-        num_fnegatives,
-        eps
-    )
+    precision = num_tpositives / (num_fpositives + num_tpositives + eps)
+    recall = num_tpositives / (num_fnegatives + num_tpositives + eps)
     
+    nume = 2 * (precision * recall)
+    deno = precision + recall + eps
+    
+    score = nume / deno
     return score
 
 
-def psuedo_fmeasure(references: Bitmap, preds: Bitmap) -> None:
+def psuedo_fmeasure(references: Bitmap, preds: Bitmap, **kwargs) -> None:
     """The pseudo F-measure metric"""
-    pass
+    neg_references = 1 - references
+    neg_preds = 1 - preds
+    
+    skeletons = bwmorph_thin(neg_references, **kwargs)
+    skeletons = skeletons.astype(np.uint8)
+    
+    neg_skeletons = 1 - skeletons
+    
+    tpositives = neg_preds * neg_references
+    fpositives = neg_preds * references
+    
+    num_tpositives = np.sum(tpositives, axis=(1, 2))
+    num_fpositives = np.sum(fpositives, axis=(1, 2))
+    
+    precision = num_tpositives / (num_fpositives + num_tpositives + eps)
+    
+    psuedo_tpositives = neg_preds * skeletons
+    psuedo_fnegatives = preds * neg_skeletons
+    
+    num_pseudo_tpositives = np.sum(psuedo_tpositives, axis=(1, 2))
+    num_pseudo_fnegatives = np.sum(psuedo_fnegatives, axis=(1, 2))
+    
+    pseudo_recall = num_pseudo_tpositives / (num_pseudo_fnegatives + num_pseudo_tpositives + eps)
+    
+    psuedo_nume = 2 * (precision * pseudo_recall)
+    pseudo_deno = precision + pseudo_recall + eps
+    
+    pseudo_score = psuedo_nume / pseudo_deno
+    return pseudo_score
 
 
 def psnr(references: Bitmap, preds: Bitmap) -> nptyping.NDArray[float]:
@@ -118,7 +126,7 @@ class DIBCO:
         
         batch_drds = None
         batch_fmeasures = fmeasure(references, preds, self.eps)
-        batch_pseudo_fmeasures = None
+        batch_pseudo_fmeasures = psuedo_fmeasure(references, preds, num_iters=self.num_thin_iters)
         batch_psnrs = psnr(references, preds)
         
         batch_metrics = {
