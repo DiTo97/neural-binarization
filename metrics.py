@@ -47,7 +47,7 @@ def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> nptyping.N
     return score
 
 
-def psuedo_fmeasure(references: Bitmap, preds: Bitmap, **kwargs) -> None:
+def psuedo_fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6, **kwargs) -> None:
     """The pseudo F-measure metric"""
     neg_references = 1 - references
     neg_preds = 1 - preds
@@ -126,7 +126,7 @@ class DIBCO:
         
         batch_drds = None
         batch_fmeasures = fmeasure(references, preds, self.eps)
-        batch_pseudo_fmeasures = psuedo_fmeasure(references, preds, num_iters=self.num_thin_iters)
+        batch_pseudo_fmeasures = psuedo_fmeasure(references, preds, self.eps, num_iters=self.num_thin_iters)
         batch_psnrs = psnr(references, preds)
         
         batch_metrics = {
