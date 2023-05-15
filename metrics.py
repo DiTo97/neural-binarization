@@ -48,8 +48,8 @@ def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> nptyping.N
     
     tpositives = neg_preds * neg_references
     fpositives = neg_preds * references
-    tnegatives = preds * neg_references
-    fnegatives = preds * references
+    tnegatives = preds * references
+    fnegatives = preds * neg_references
     
     num_tpositives = np.sum(tpositives, axis=(1, 2))
     num_fpositives = np.sum(fpositives, axis=(1, 2))
