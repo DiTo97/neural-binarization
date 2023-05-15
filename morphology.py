@@ -1,9 +1,7 @@
 import numpy as np
-import numpy.typing as nptyping
 import scipy
 
-
-Bitmap = nptyping.NDArray[bool]
+from common import Bitmap
 
 
 G123_LUT = np.array([
