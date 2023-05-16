@@ -218,7 +218,7 @@ def psnr(references: Bitmap, preds: Bitmap) -> nptyping.NDArray[float]:
 class DIBCO:
     num_thin_iters: int = -1
     eps: float = 1e-6
-    block_size: int = 8, 
+    block_size: int = 8
     block_mask_size: int = 5
         
     def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
