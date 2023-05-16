@@ -122,13 +122,18 @@ def drd(
             ]
 
             local_u_preds = u_preds_resized[:, idx, jdx]
+            local_u_preds = np.expand_dims(local_u_preds, axis=(1, 2))
 
-            local_fpositives = (1 - local_u_references) * local_u_preds 
+            local_fpositives = (1 - local_u_references) * local_u_preds
+            local_fpositives = local_fpositives.astype(bool)
+
             local_fnegatives = (1 - local_u_preds) * local_u_references
+            local_fnegatives = local_fnegatives.astype(bool)
             
             local_difference = local_fpositives | local_fnegatives
+            local_difference = local_difference * norm_weights
 
-            local_score = np.sum(local_difference * norm_weights, axis=(1, 2))
+            local_score = np.sum(local_difference, axis=(1, 2))
             local_score = local_score * ~equal
 
             sum_score += local_score
