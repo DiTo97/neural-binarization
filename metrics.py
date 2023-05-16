@@ -216,6 +216,7 @@ def psnr(references: Bitmap, preds: Bitmap) -> nptyping.NDArray[float]:
 
 @dataclass
 class DIBCO:
+    """An evaluation suite of document image binarization (DIBCO) metrics"""
     num_thin_iters: int = -1
     eps: float = 1e-6
     block_size: int = 8
