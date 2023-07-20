@@ -253,7 +253,7 @@ class fast_DIBCO:
         if not has_doxapy:
             raise ValueError(
                 "The fast DIBCO suite requires Doxapy. "
-                "Try 'python -m pip install doxapy'"
+                "Try in your venv 'python -m pip install doxapy'"
             )
 
     def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
