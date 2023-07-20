@@ -11,12 +11,20 @@ https://ieeexplore.ieee.org/document/8270159
 """
 import typing
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
-import numpy.typing as nptyping
+import numpy.typing as np_typing
 
 from common import Bitmap
 from morphology import bwmorph_thin
+
+
+try:
+    import doxapy
+    has_doxapy = True
+except ImportError:
+    has_doxapy = False
 
 
 def drd(
@@ -25,7 +33,7 @@ def drd(
     eps: float = 1e-6, 
     block_size: int = 8, 
     block_mask_size: int = 5
-) -> nptyping.NDArray[float]:
+) -> np_typing.NDArray[np.float_]:
     """The distance reciprocal distortion (DRD) metric"""
     batch_size, height, width = references.shape
 
@@ -145,7 +153,7 @@ def drd(
     return score
     
 
-def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> nptyping.NDArray[float]:
+def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> np_typing.NDArray[np.float_]:
     """The F-measure metric"""
     neg_references = 1 - references
     neg_preds = 1 - preds
@@ -168,7 +176,7 @@ def fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> nptyping.N
     return score
 
 
-def psuedo_fmeasure(references, preds, eps: float = 1e-6, **kwargs) -> None:
+def pseudo_fmeasure(references: Bitmap, preds: Bitmap, eps: float = 1e-6, **kwargs) -> np_typing.NDArray[np.float_]:
     """The pseudo F-measure metric"""
     neg_references = 1 - references
     neg_preds = 1 - preds
@@ -183,22 +191,22 @@ def psuedo_fmeasure(references, preds, eps: float = 1e-6, **kwargs) -> None:
     
     precision = num_tpositives / (num_fpositives + num_tpositives + eps)
     
-    psuedo_tpositives = neg_preds * skeletons
-    psuedo_fnegatives = preds * skeletons
+    pseudo_tpositives = neg_preds * skeletons
+    pseudo_fnegatives = preds * skeletons
     
-    num_pseudo_tpositives = np.sum(psuedo_tpositives, axis=(1, 2))
-    num_pseudo_fnegatives = np.sum(psuedo_fnegatives, axis=(1, 2))
+    num_pseudo_tpositives = np.sum(pseudo_tpositives, axis=(1, 2))
+    num_pseudo_fnegatives = np.sum(pseudo_fnegatives, axis=(1, 2))
     
     pseudo_recall = num_pseudo_tpositives / (num_pseudo_fnegatives + num_pseudo_tpositives + eps)
     
-    psuedo_nume = 2 * (precision * pseudo_recall)
+    pseudo_nume = 2 * (precision * pseudo_recall)
     pseudo_deno = precision + pseudo_recall + eps
     
-    pseudo_score = psuedo_nume / pseudo_deno
+    pseudo_score = pseudo_nume / pseudo_deno
     return pseudo_score
 
 
-def psnr(references: Bitmap, preds: Bitmap) -> nptyping.NDArray[float]:
+def psnr(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> np_typing.NDArray[np.float_]:
     """The peak signal-to-noise ratio (PSNR) metric"""
     neg_references = 1 - references
     neg_preds = 1 - preds
@@ -208,19 +216,72 @@ def psnr(references: Bitmap, preds: Bitmap) -> nptyping.NDArray[float]:
     
     ftotals = fpositives | fnegatives
     
-    err = np.mean(ftotals, axis=(1, 2))
+    err = np.mean(ftotals, axis=(1, 2)) + eps
     score = 10 * np.log10(1 / err)
     
     return score
 
 
 @dataclass
-class DIBCO:
-    """An evaluation suite of document image binarization (DIBCO) metrics"""
+class slow_DIBCO:
     num_thin_iters: int = -1
     eps: float = 1e-6
     block_size: int = 8
     block_mask_size: int = 5
+
+    def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
+        batch_drds = drd(references, preds, self.eps, self.block_size, self.block_mask_size)
+        batch_fmeasures = fmeasure(references, preds, self.eps)
+        batch_pseudo_fmeasures = pseudo_fmeasure(references, preds, self.eps, num_iters=self.num_thin_iters)
+        batch_psnrs = psnr(references, preds, self.eps)
+
+        batch_metrics = {
+            "DRD": np.mean(batch_drds),
+            "F-measure": np.mean(batch_fmeasures),
+            "pseudo-F-measure": np.mean(batch_pseudo_fmeasures),
+            "PSNR": np.mean(batch_psnrs)
+        }
+
+        return batch_metrics
+
+
+@dataclass
+class fast_DIBCO:
+    eps: float = 1e-6
+
+    def __post_init__(self) -> None:
+        if not has_doxapy:
+            raise ValueError(
+                "The fast DIBCO suite requires Doxapy. "
+                "Try 'python -m pip install doxapy'"
+            )
+
+    def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
+        batch_size = references.shape[0]
+
+        batch_metrics = {
+            "DRD": [],
+            "F-measure": [],
+            "PSNR": []
+        }
+
+        for idx in range(batch_size):
+            metrics = doxapy.calculate_performance(references[idx], preds[idx])
+
+            batch_metrics["DRD"].append(metrics["drdm"])
+            batch_metrics["F-measure"].append(metrics["fm"])
+            batch_metrics["PSNR"].append(metrics["psnr"])
+            
+        batch_metrics = {key: np.mean(val) for key, val in batch_metrics.items()}
+
+        return batch_metrics
+
+
+class DIBCO:
+    """An evaluation suite of document image binarization (DIBCO) metrics"""
+    def __init__(self, fast: bool = False, **kwargs: typing.Dict[str, Any]) -> None:
+        base = fast_DIBCO if fast else slow_DIBCO
+        self.metric = base(**kwargs)
         
     def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
         if references.ndim not in [2, 3]: 
@@ -241,20 +302,10 @@ class DIBCO:
         if not references.ndim == 3:
             references = np.expand_dims(references, 0)
             preds = np.expand_dims(preds, 0)
-            
+
         if references.shape[0] != preds.shape[0]:
             raise ValueError("The references and preds bitmaps do not have the same number of examples")
-        
-        batch_drds = drd(references, preds, self.eps, self.block_size, self.block_mask_size)
-        batch_fmeasures = fmeasure(references, preds, self.eps)
-        batch_pseudo_fmeasures = psuedo_fmeasure(references, preds, self.eps, num_iters=self.num_thin_iters)
-        batch_psnrs = psnr(references, preds)
-        
-        batch_metrics = {
-            "drd": np.mean(batch_drds),
-            "f-measure": np.mean(batch_fmeasures),
-            "pseudo-f-measure": np.mean(batch_pseudo_fmeasures),
-            "psnr": np.mean(batch_psnrs)
-        }
-        
+
+        batch_metrics = self.metric(references, preds)
+
         return batch_metrics
