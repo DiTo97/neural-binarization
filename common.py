@@ -1,4 +1,5 @@
-import numpy.typing as nptyping
+import numpy as np
+import numpy.typing as np_typing
 
 
-Bitmap = nptyping.NDArray[bool]
+Bitmap = np_typing.NDArray[np.bool_]
