@@ -9,7 +9,6 @@ The implemented metrics are the following:
 For more information on the DIBCO metrics, see the 2017 introductory paper,
 https://ieeexplore.ieee.org/document/8270159
 """
-import typing
 from dataclasses import dataclass
 from typing import Any
 
@@ -229,7 +228,7 @@ class slow_DIBCO:
     block_size: int = 8
     block_mask_size: int = 5
 
-    def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
+    def __call__(self, references: Bitmap, preds: Bitmap) -> dict[str, float]:
         batch_drds = drd(references, preds, self.eps, self.block_size, self.block_mask_size)
         batch_fmeasures = fmeasure(references, preds, self.eps)
         batch_pseudo_fmeasures = pseudo_fmeasure(references, preds, self.eps, num_iters=self.num_thin_iters)
@@ -253,7 +252,7 @@ class fast_DIBCO:
                 "Try in your venv 'python -m pip install doxapy'"
             )
 
-    def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
+    def __call__(self, references: Bitmap, preds: Bitmap) -> dict[str, float]:
         batch_size = references.shape[0]
 
         batch_metrics = {
@@ -282,11 +281,11 @@ class fast_DIBCO:
 
 class DIBCO:
     """An evaluation suite of document image binarization (DIBCO) metrics"""
-    def __init__(self, fast: bool = False, **kwargs: typing.Dict[str, Any] = None) -> None:    
+    def __init__(self, fast: bool = False, **kwargs: dict[str, Any] = None) -> None:    
         __DIBCO = fast_DIBCO if fast else slow_DIBCO
         self.metric = __DIBCO(**(kwargs or {}))
         
-    def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
+    def __call__(self, references: Bitmap, preds: Bitmap) -> dict[str, float]:
         if references.ndim not in [2, 3]: 
             raise ValueError("The references bitmap must be a 2D array or a batched 3D tensor")
             
