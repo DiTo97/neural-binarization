@@ -245,11 +245,8 @@ class slow_DIBCO:
         return batch_metrics
 
 
-@dataclass
 class fast_DIBCO:
-    eps: float = 1e-6
-
-    def __post_init__(self) -> None:
+    def __init__(self) -> None:
         if not has_doxapy:
             raise ValueError(
                 "The fast DIBCO suite requires Doxapy. "
@@ -266,7 +263,13 @@ class fast_DIBCO:
         }
 
         for idx in range(batch_size):
-            metrics = doxapy.calculate_performance(references[idx], preds[idx])
+            metrics = doxapy.calculate_performance_ex(
+                references[idx], 
+                preds[idx],
+                fm=True,
+                psnr=True,
+                drdm=True
+            )
 
             batch_metrics["DRD"].append(metrics["drdm"])
             batch_metrics["F-measure"].append(metrics["fm"])
@@ -279,9 +282,9 @@ class fast_DIBCO:
 
 class DIBCO:
     """An evaluation suite of document image binarization (DIBCO) metrics"""
-    def __init__(self, fast: bool = False, **kwargs: typing.Dict[str, Any]) -> None:
-        base = fast_DIBCO if fast else slow_DIBCO
-        self.metric = base(**kwargs)
+    def __init__(self, fast: bool = False, **kwargs: typing.Dict[str, Any] = None) -> None:    
+        __DIBCO = fast_DIBCO if fast else slow_DIBCO
+        self.metric = __DIBCO(**(kwargs or {}))
         
     def __call__(self, references: Bitmap, preds: Bitmap) -> typing.Dict[str, float]:
         if references.ndim not in [2, 3]: 
