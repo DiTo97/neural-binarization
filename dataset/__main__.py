@@ -14,7 +14,8 @@ from tqdm.auto import tqdm
 FLAGS = flags.FLAGS
 
 
-flags.DEFINE_string("output-dir", os.getcwd(), "The DIBCO dataset dir")
+flags.DEFINE_string("artifact-dir", os.getcwd(), "The local artifact dir")
+flags.DEFINE_string("artifact", "DIB", "The name of the W&B artifact")
 flags.DEFINE_integer("seed", 0, "The random state seed")
 flags.DEFINE_float("eval-size", 0.2, "The eval split size")
 flags.DEFINE_float("test-size", 0.2, "The test split size")
@@ -104,7 +105,7 @@ def main(argv):
 
         collection = collection.class_encode_column("ensemble")
 
-        train_size = 1.0 - FLAGS.test_size
+        train_size = 1.0 - (FLAGS.test_size + FLAGS.eval_size)
 
         collection = collection.train_test_split(
             seed=FLAGS.seed,
@@ -113,7 +114,30 @@ def main(argv):
             train_size=train_size
         )
 
-        collection.save_to_disk(FLAGS.output_dir)
+        collection.save_to_disk(FLAGS.artifact_dir)
+
+        if FLAGS.artifact:
+            import wandb
+
+            #
+            env = wandb.init(project="neural-binarization")
+
+            artifact_kwargs = {
+                "description": "A document image binarization collection",
+                "metadata": {
+                    "datasets": [],
+                    "train-size": train_size,
+                    "eval-size": FLAGS.eval_size,
+                    "test-size": FLAGS.test_size
+                },
+                "type": "dataset"
+            }
+
+            artifact = wandb.Artifact(FLAGS.artifact, **artifact_kwargs)
+
+            artifact.add_dir(FLAGS.artifact_dir)
+
+            env.log_artifact(FLAGS.artifact)
 
 
 if __name__ == "__main__":

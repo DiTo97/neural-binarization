@@ -1,0 +1,3 @@
+[submodule "third-party/sauvolanet"]
+	path = third-party/sauvolanet
+	url = https://github.com/Leedeng/SauvolaNet.git
