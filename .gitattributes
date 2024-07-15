@@ -1,5 +1,5 @@
-# Auto conversion to OS line endings
+# auto conversion to OS line endings
 * text=auto
 
-# It ensures UNIX-style line endings for some files
+# ensures UNIX-style line endings for some files
 *.sh text eol=lf
