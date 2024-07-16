@@ -23,11 +23,10 @@ from .typing import Bitmap
 
 try:
     import doxapy
-
     fastmode = True
 except ImportError:
-    fastmode = False
     from .morphology import bwmorph_thinning
+    fastmode = False
 
 
 def drd(
@@ -216,10 +215,10 @@ def psnr(references: Bitmap, preds: Bitmap, eps: float = 1e-6) -> NDArray[numpy.
     FP = neg_preds * references
     FN = preds * neg_references
 
-    mistakes = FP | FN
+    residuals = FP | FN
 
-    error = numpy.mean(mistakes, axis=(1, 2)) + eps
-    score = 10 * numpy.log10(1 / error)
+    score = numpy.mean(residuals, axis=(1, 2)) + eps
+    score = 10 * numpy.log10(1 / score)
 
     return score
 
@@ -233,17 +232,13 @@ class _slow_DIBCO:
 
     def __call__(self, references: Bitmap, preds: Bitmap) -> dict[str, float]:
         batch_metrics = {
-            "DRD": numpy.mean(
-                drd(references, preds, self.eps, self.block_size, self.block_mask_size)
-            ),
-            "F-measure": numpy.mean(fmeasure(references, preds, self.eps)),
-            "pseudo-F-measure": numpy.mean(
-                pseudo_fmeasure(
-                    references, preds, self.eps, num_iters=self.num_thin_iters
-                )
-            ),
-            "PSNR": numpy.mean(psnr(references, preds, self.eps)),
+            "DRD": drd(references, preds, self.eps, self.block_size, self.block_mask_size),
+            "F-measure": fmeasure(references, preds, self.eps),
+            "pseudo-F-measure": pseudo_fmeasure(references, preds, self.eps, num_iters=self.num_thin_iters),
+            "PSNR": psnr(references, preds, self.eps)
         }
+
+        batch_metrics = {key: numpy.mean(val) for key, val in batch_metrics.items()}
 
         return batch_metrics
 
